@@ -17,7 +17,6 @@ CHIP Xor {
 
     // a or b and (not a and b)
     Or(a=a, b=b, out=aorb);
-    And(a=a, b=b, out=aandb);
-    Not(in=aandb, out=notaandb);
-    And(a=aorb, b=notaandb, out=out);
+    Nand(a=a, b=b, out=anandb);
+    And(a=aorb, b=anandb, out=out);
 }
