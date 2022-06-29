@@ -9,6 +9,14 @@
  *       b if sel == 001
  *       etc.
  *       h if sel == 111
+ *       000 -> a
+ *       001 -> b
+ *       010 -> c
+ *       011 -> d
+ *       100 -> e
+ *       101 -> f
+ *       110 -> g
+ *       111 -> h
  */
 
 CHIP Mux8Way16 {
@@ -19,4 +27,13 @@ CHIP Mux8Way16 {
 
     PARTS:
     // Put your code here:
+    Mux16(a=a, b=b, sel=sel[0], out=i);      // if sel[0]==0, i==a, else if sel[0]==1, i==b
+    Mux16(a=c, b=d, sel=sel[0], out=j);      // if sel[0]==0, j==c, else if sel[0]==1, j==d
+    Mux16(a=e, b=f, sel=sel[0], out=k);      // if sel[0]==0, k==e, else if sel[0]==1, k==f
+    Mux16(a=g, b=h, sel=sel[0], out=l);      // if sel[0]==0, l==g, else if sel[0]==1, l==h
+
+    Mux16(a=i, b=j, sel=sel[1], out=m);      // if sel[1]==0, m==a, else if sel[1]==1, m==b
+    Mux16(a=k, b=l, sel=sel[1], out=n);      // if sel[1]==0, n==a, else if sel[1]==1, n==b
+
+    Mux16(a=m, b=n, sel=sel[2], out=out);    // if sel[2]==0, out==m, else if sel[2]==1, out==n
 }
