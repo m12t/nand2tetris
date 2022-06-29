@@ -17,9 +17,12 @@ CHIP DMux4Way {
 
     PARTS:
     // Put your code here:
-    // Not(in=sel[0], out=notsel0);  // original implementation
+
+    // original implementation
+    // Not(in=sel[0], out=notsel0);
     // Not(in=sel[1], out=notsel1);
-    // And(a=notsel0, b=notsel1, out=sel00);  // 1 if sel == 00
+
+    // And(a=notsel1, b=notsel0, out=sel00);  // 1 if sel == 00
     // And(a=notsel1, b=sel[0], out=sel01);   // 1 if sel == 01
     // And(a=sel[1], b=notsel0, out=sel10);   // 1 if sel == 10
     // And(a=sel[1], b=sel[0], out=sel11);    // 1 if sel == 11
@@ -29,7 +32,8 @@ CHIP DMux4Way {
     // And(a=in, b=sel10, out=c);
     // And(a=in, b=sel11, out=d);
 
-    DMux(in=in,sel=sel[1],a=ao,b=bo);  // cleaner implementation found
-	DMux(in=ao,sel=sel[0],a=a,b=b);
-	DMux(in=bo,sel=sel[0],a=c,b=d);
+    // cleaner implementation found using 9 vs 10 lines (https://people.duke.edu/~nts9/logicgates/DMux4Way.hdl)
+    DMux(in=in, sel=sel[1], a=ao, b=bo);  // {a, b, c, d} -> if sel[1] == 0 -> {a, b} else if sel[1] == 0 -> {c, d}
+	DMux(in=ao, sel=sel[0], a=a, b=b);    // {a, b}       -> if sel[0] == 0 -> {a} else if sel[0] == 0 -> {b}
+	DMux(in=bo, sel=sel[0], a=c, b=d);    // {c, d}       -> if sel[0] == 0 -> {c} else if sel[0] == 0 -> {d}
 }
