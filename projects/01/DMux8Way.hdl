@@ -9,6 +9,14 @@
  *                            {0, in, 0, 0, 0, 0, 0, 0} if sel == 001
  *                            etc.
  *                            {0, 0, 0, 0, 0, 0, 0, in} if sel == 111
+ *       000 -> a
+ *       001 -> b
+ *       010 -> c
+ *       011 -> d
+ *       100 -> e
+ *       101 -> f
+ *       110 -> g
+ *       111 -> h
  */
 
 CHIP DMux8Way {
@@ -17,4 +25,13 @@ CHIP DMux8Way {
 
     PARTS:
     // Put your code here:
+    DMux(in=in, sel=sel[2], a=a2d, b=e2h);  // evaluate the MSB: if sel[2] == 0 -> a2d={a,b,c,d} else if sel[2] == 1 -> e2h={e,f,g,h};
+
+    DMux(in=a2d, sel=sel[1], a=ab, b=cd);   // evaluate the Middle Bit: if sel[1] == 0 -> {a,b} else if sel[1] == 1 -> {c,d}
+    DMux(in=e2h, sel=sel[1], a=ef, b=gh);   // evaluate the Middle Bit: if sel[1] == 0 -> {e,f} else if sel[1] == 1 -> {g,h}
+
+    DMux(in=ab, sel=sel[0], a=a, b=b);      // evaluate the LSB: if sel[0] == 0 -> {a} else if sel[0] == 1 -> {b}
+    DMux(in=cd, sel=sel[0], a=c, b=d);      // evaluate the LSB: if sel[0] == 0 -> {c} else if sel[0] == 1 -> {d}
+    DMux(in=ef, sel=sel[0], a=e, b=f);      // evaluate the LSB: if sel[0] == 0 -> {e} else if sel[0] == 1 -> {f}
+    DMux(in=gh, sel=sel[0], a=g, b=h);      // evaluate the LSB: if sel[0] == 0 -> {g} else if sel[0] == 1 -> {h}
 }
