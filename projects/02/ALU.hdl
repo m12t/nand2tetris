@@ -20,9 +20,11 @@
 // if (nx == 1) set x = !x       // bitwise not
 // if (zy == 1) set y = 0        // 16-bit constant
 // if (ny == 1) set y = !y       // bitwise not
+
 // if (f == 1)  set out = x + y  // integer 2's complement addition
 // if (f == 0)  set out = x & y  // bitwise and
 // if (no == 1) set out = !out   // bitwise not
+
 // if (out == 0) set zr = 1
 // if (out < 0) set ng = 1
 
@@ -42,5 +44,24 @@ CHIP ALU {
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-   // Put you code here:
+        // Put you code here:
+        // this can be done in <20 lines of hdl...
+        // negate x to set to zero
+        Mux16(a=x, b=false, sel=zx, out=x1);  // output is either unmodified x or 0
+        Not16(in=x1, out=x2);                 // output is the negated output of above
+        Mux16(a=x1, b=x2, sel=nx, out=x3);    // output is either unmodified x1 or negated x1
+
+        // repeat for y
+        Mux16(a=y, b=false, sel=zy, out=y1);  // output is either unmodified y or 0
+        Not16(in=y1, out=y2);                 // output is the negated output of above
+        Mux16(a=y1, b=y2, sel=ny, out=y3);    // output is either unmodified y1 or negated y1
+
+        And16(a=x3, b=y3, out=xandy);
+        Add16(a=x3, b=y3, out=xplusy);        // if (f == 1)  set out = x + y  // integer 2's complement addition
+        Mux16(a=xandy, b=xplusy, sel=f, out=preout);
+
+        Not16(in=preout, out=negatedPreout);
+
+        Mux16(a=preout, b=negatedPreout, sel=no, out=out);
+
 }
