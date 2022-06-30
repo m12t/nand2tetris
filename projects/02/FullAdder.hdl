@@ -14,12 +14,19 @@ CHIP FullAdder {
 
     PARTS:
     // Put you code here:
-    Xor(a=a, b=b, out=sum1);
-    Xor(a=sum1, b=c, out=sum);
-    And(a=a, b=b, out=aandb);
-    And(a=a, b=c, out=aandc);
-    And(a=b, b=c, out=bandc);
 
-    Or(a=aandb, b=aandc, out=c1);
-    Or(a=c1, b=bandc, out=carry);
+    // original implementation
+    // Xor(a=a, b=b, out=sum1);
+    // Xor(a=sum1, b=c, out=sum);
+    // And(a=a, b=b, out=aandb);
+    // And(a=a, b=c, out=aandc);
+    // And(a=b, b=c, out=bandc);
+
+    // Or(a=aandb, b=aandc, out=c1);
+    // Or(a=c1, b=bandc, out=carry);
+
+    // improved implementation based on (https://people.duke.edu/~nts9/logicgates/FullAdder.hdl)
+    HalfAdder(a=a, b=b, sum=s1, carry=c1);
+    HalfAdder(a=s1, b=c, sum=sum, carry=c2);
+    Or(a=c1, b=c2, out=carry);
 }
