@@ -45,23 +45,27 @@ CHIP ALU {
 
     PARTS:
         // Put you code here:
-        // this can be done in <20 lines of hdl...
-        // negate x to set to zero
+
+        // handle the x input according to the flags
         Mux16(a=x, b=false, sel=zx, out=x1);  // output is either unmodified x or 0
         Not16(in=x1, out=x2);                 // output is the negated output of above
         Mux16(a=x1, b=x2, sel=nx, out=x3);    // output is either unmodified x1 or negated x1
 
-        // repeat for y
+        // repeat for the y input
         Mux16(a=y, b=false, sel=zy, out=y1);  // output is either unmodified y or 0
         Not16(in=y1, out=y2);                 // output is the negated output of above
         Mux16(a=y1, b=y2, sel=ny, out=y3);    // output is either unmodified y1 or negated y1
 
+        // calculate the bitwise And and the 2's complement addition so that they are available to the mux below
         And16(a=x3, b=y3, out=xandy);
         Add16(a=x3, b=y3, out=xplusy);        // if (f == 1)  set out = x + y  // integer 2's complement addition
         Mux16(a=xandy, b=xplusy, sel=f, out=preout);
 
+        // compute the negated preout to be used below and optionally outputted depending on the `no` flag int the Mux
         Not16(in=preout, out=negatedPreout);
+        Mux16(a=preout, b=negatedPreout, sel=no, out=out);  // output is either unmodified or negated based on `no` flag
 
-        Mux16(a=preout, b=negatedPreout, sel=no, out=out);
+        // if (out == 0) set zr = 1
+        // if (out < 0) set ng = 1
 
 }
