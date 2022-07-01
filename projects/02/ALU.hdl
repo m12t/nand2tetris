@@ -44,20 +44,20 @@ CHIP ALU {
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-        // handle the x input according to the flags
+        // handle the `x` input according to the flags
         Mux16(a=x, b=false, sel=zx, out=x1);  // output is either unmodified x or 0
         Not16(in=x1, out=x2);                 // output is the negated output of above
         Mux16(a=x1, b=x2, sel=nx, out=x3);    // output is either unmodified x1 or negated x1
 
-        // repeat for the y input
+        // handle the `y` input according to the flags
         Mux16(a=y, b=false, sel=zy, out=y1);  // output is either unmodified y or 0
         Not16(in=y1, out=y2);                 // output is the negated output of above
         Mux16(a=y1, b=y2, sel=ny, out=y3);    // output is either unmodified y1 or negated y1
 
-        // calculate the bitwise And and the 2's complement addition so that they are available to the mux below
+        // calculate the bitwise `And` and the 2's complement addition so that they are available to the mux below
         And16(a=x3, b=y3, out=xandy);
         Add16(a=x3, b=y3, out=xplusy);        // if (f == 1)  set out = x + y  // integer 2's complement addition
-        Mux16(a=xandy, b=xplusy, sel=f, out=preout);
+        Mux16(a=xandy, b=xplusy, sel=f, out=preout);  // 
 
         // compute the negated preout to be used below and optionally outputted depending on the `no` flag int the Mux
         Not16(in=preout, out=negatedPreout);
@@ -65,17 +65,16 @@ CHIP ALU {
 
         // handle the output flags
         // if (out == 0) set zr = 1
-        Mux16(a=preout, b=negatedPreout, sel=no, out[0..7]=finalOut1);  // output is either unmodified or negated based on `no` flag
-        Mux16(a=preout, b=negatedPreout, sel=no, out[8..15]=finalOut2);  // output is either unmodified or negated based on `no` flag
-        Or8Way(in=finalOut1, out=o1);           // if any 1s are found here, the output will be high
-        Or8Way(in=finalOut2, out=o2);         // if any 1s are found here, the output will be high
-        Or(a=o1, b=o2, out=zrPreout);   // if this is 1, the output is NOT zero because 1s were found
-        // flip the zrPreout such that if it was 0 (meaning no 1s were found in the output,
-        // the ultimate output for zr should be 1, which signifies that the output == 0.
-        Not(in=zrPreout, out=zr);
+        // this ugliness is needed since there's no builtin for `Or16Way` and I wanted to avoid a custom implementation.
+        // also, there were bugs with "subbussing internal node" so the hacky out[0..7] syntax is the recommended remediation in the HDL guide.
+        Mux16(a=preout, b=negatedPreout, sel=no, out[0..7]=firstHalf);    // output is either unmodified or negated based on `no` flag
+        Mux16(a=preout, b=negatedPreout, sel=no, out[8..15]=secondHalf);  // output is either unmodified or negated based on `no` flag
+        Or8Way(in=firstHalf, out=o1);            // if any 1s are found here, the output will be high
+        Or8Way(in=secondHalf, out=o2);           // if any 1s are found here, the output will be high
+        Or(a=o1, b=o2, out=zrPreout);            // if this is 1, the output is NOT zero because 1s were found
+        Not(in=zrPreout, out=zr);  // flip zrPreout. if it was 0 (meaning no 1s were found in the output, the ultimate output for zr should be 1)
 
         // if (out < 0) set ng = 1
         Mux16(a=preout, b=negatedPreout, sel=no, out[15]=msb);  // output is either unmodified or negated based on `no` flag
         And(a=msb, b=true, out=ng);  // since in 2's complement the MSB is signed, a 1 means the value is negative.
-
 }
