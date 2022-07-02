@@ -14,5 +14,8 @@ CHIP Bit {
     OUT out;
 
     PARTS:
-    // Put your code here:
+        // Put your code here:
+        // this took way longer than it should have just because I didn't properly understand the fan-out syntax.
+        Mux(a=previous, b=in, sel=load, out=o1);
+        DFF(in=o1, out=previous, out=out);       // so this is what was mean by "unlimited fan out"... you can have multiple `out`s
 }
