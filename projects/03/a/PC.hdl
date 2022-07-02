@@ -16,5 +16,21 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+        // right now reset won't work since it relies on load, which it shouldn't.
+
+        // reset has highest priority, so do that operation LAST. reverse the order...
+
+        Inc16(in=previous, out=incremented);                           // only use if inc == 1
+        Mux16(a=previous, b=incremented, sel=inc, out=o1);
+
+        Mux16(a=o1, b=in, sel=load, out=o2);
+
+        Or(a=inc, b=load, out=action1);
+
+        Mux16(a=in, b=o2, sel=action1, out=o3);
+        Mux16(a=o3, b=false, sel=reset, out=o4);  // this takes precedence over other actions
+
+        Or(a=reset, b=action1, out=action2);
+        Register(in=o4, load=action2, out=previous, out=out);                 // optionally load in
+
 }
