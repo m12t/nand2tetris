@@ -14,6 +14,20 @@ CHIP RAM4K {
     IN in[16], load, address[12];
     OUT out[16];
 
-    PARTS:
-    // Put your code here:
+    PARTS:        
+        // use Demultiplexer to essentially create a bitmask of `load` that is later applied to the registers
+        DMux8Way(in=load, sel=address[9..11], a=a, b=b, c=c, d=d, e=e, f=f, g=g, h=h);
+
+        // apply the bitmask to load (or not) `in` into the correct register and return the values of all registers
+        RAM512(in=in, load=a, address=address[0..8], out=aOut);
+        RAM512(in=in, load=b, address=address[0..8], out=bOut);
+        RAM512(in=in, load=c, address=address[0..8], out=cOut);
+        RAM512(in=in, load=d, address=address[0..8], out=dOut);
+        RAM512(in=in, load=e, address=address[0..8], out=eOut);
+        RAM512(in=in, load=f, address=address[0..8], out=fOut);
+        RAM512(in=in, load=g, address=address[0..8], out=gOut);
+        RAM512(in=in, load=h, address=address[0..8], out=hOut);
+
+        // use 8 way multiplexer to spit out the values found at the register given by `address`
+        Mux8Way16(a=aOut, b=bOut, c=cOut, d=dOut, e=eOut, f=fOut, g=gOut, h=hOut, sel=address[9..11], out=out);
 }
