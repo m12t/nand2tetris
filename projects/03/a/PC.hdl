@@ -21,6 +21,8 @@ CHIP PC {
 
         // reset has highest priority, so do that operation LAST. reverse the order...
 
+        // this more elegant PC was found at (https://people.duke.edu/~nts9/logicgates/PC.hdl)
+
         Inc16(in=previous, out=incremented);                     // 1. `inc` is the lowest priority; `previous` ties the previous output and allows the inc to work
         Mux16(a=previous, b=incremented, sel=inc, out=o1);       // 1. if `inc`==1 increment the previous output. Else pass through the previous value unchanged
 
