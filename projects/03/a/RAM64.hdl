@@ -15,5 +15,26 @@ CHIP RAM64 {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+        // * very similar logic to RAM8, but split the address in two for the top level (8x RAM8s)
+        //   and bottom level (8x registers per RAM8)
+        // * NOTE: indexing of `address` is "backwards" to python lists
+        //   eg. address = 100 -> address[0] == 0, address[1] = 0, address[2] = 1
+        //       whereas in Python it is the opposite. Ie. MSBs are high, LSB is at index 0.
+        //   this is important for ensuring that the DMux8Way gets the high addresses and RAM8 the low ones.
+        
+        // use Demultiplexer to essentially create a bitmask of `load` that is later applied to the registers
+        DMux8Way(in=load, sel=address[3..5], a=a, b=b, c=c, d=d, e=e, f=f, g=g, h=h);
+
+        // apply the bitmask to load (or not) `in` into the correct register and return the values of all registers
+        RAM8(in=in, load=a, address=address[0..2], out=aOut);
+        RAM8(in=in, load=b, address=address[0..2], out=bOut);
+        RAM8(in=in, load=c, address=address[0..2], out=cOut);
+        RAM8(in=in, load=d, address=address[0..2], out=dOut);
+        RAM8(in=in, load=e, address=address[0..2], out=eOut);
+        RAM8(in=in, load=f, address=address[0..2], out=fOut);
+        RAM8(in=in, load=g, address=address[0..2], out=gOut);
+        RAM8(in=in, load=h, address=address[0..2], out=hOut);
+
+        // use 8 way multiplexer to spit out the values found at the register given by `address`
+        Mux8Way16(a=aOut, b=bOut, c=cOut, d=dOut, e=eOut, f=fOut, g=gOut, h=hOut, sel=address[3..5], out=out);
 }
