@@ -24,6 +24,6 @@ CHIP RAM16K {
         RAM4K(in=in, load=c, address=address[0..11], out=cOut);
         RAM4K(in=in, load=d, address=address[0..11], out=dOut);
 
-        // use 8 way multiplexer to spit out the values found at the register given by `address`
+        // use 4 way multiplexer to spit out the values found at the register given by `address`
         Mux4Way16(a=aOut, b=bOut, c=cOut, d=dOut, sel=address[12..13], out=out);
 }
