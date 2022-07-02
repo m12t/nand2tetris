@@ -26,12 +26,12 @@ CHIP PC {
 
         Mux16(a=o1, b=in, sel=load, out=o2);                     // 2. the next priority is `load`. load the new value `in` if load==1 else the output from (1)
 
-        Or(a=inc, b=load, out=incOrLoad);                        // 3. used to determine if an action was previously taken by (1) or (2)
+        Mux16(a=o2, b=false, sel=reset, out=o3);                 // 3. `reset` takes precedence over other actions, so it is performed "last" (it's combinational logic, but still occurs later in the circuit)
 
-        Mux16(a=in, b=o2, sel=incOrLoad, out=o3);                // 4. based on the value from (3) either use the original `in` or the modified `o3` output
-        Mux16(a=o3, b=false, sel=reset, out=o4);                 // 5. this takes precedence over other actions, so it is performed "last" (it's combinational logic, but still occurs later in the circuit)
+        Register(in=o3, load=true, out=previous, out=out);       // 4. push the now configured values out to the register.
 
-        Or(a=reset, b=incOrLoad, out=anyAction);                 // 6. used to determine if an action was previously taken by (1), (2), or (5)
-        Register(in=o4, load=anyAction, out=previous, out=out);  // 7. based on (6) load the new value if `load`, `inc`, or `reset` were high. else read-only.
-
+        // * this implementation forces a load each iteration vs my previous commits which
+        //   checked for actions. I think this way would be faster because the HDL in
+        //   `Bit` uses a Mux that forces a load on the DFF anyways. Plus this eliminated
+        //   multiple Or gates.
 }
