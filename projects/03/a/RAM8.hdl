@@ -17,7 +17,8 @@ CHIP RAM8 {
     PARTS:
         // Put your code here:
 
-        DMux8Way(in=load, sel=address, a=a, b=b, c=c, d=d, e=e, f=f, g=g, h=h);  // this essentially creates a bitmask of `load`
+        // use Demultiplexer to essentially creates a bitmask of `load` that is later applied to the registers
+        DMux8Way(in=load, sel=address, a=a, b=b, c=c, d=d, e=e, f=f, g=g, h=h);
 
         // apply the bitmask to load (or not) `in` into the correct register and return the values of all registers
         Register(in=in, load=a, out=aOut);
