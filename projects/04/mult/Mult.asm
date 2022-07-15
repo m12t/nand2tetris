@@ -11,16 +11,20 @@
 
 // Put your code here.
 
-// ------------ pseudocode:
+// program flow:
+// the program will run exactly `R1` times and
+// add R0 to itself to perform the multiplication
+
+// ------------ pseudocode ------------
 // loop:
 //    if r1 == 0:
 //        exit
+//    r1 -= 1
 //    r2 = r2 + r0
-//    r1--
 //    JMP loop
+// ------------------------------------
 
-
-// NOTES:
+// NOTES on HACK resigters:
 // D: data register
 // A: address register
 // M: the selected RAM register
@@ -40,8 +44,9 @@ M = 0
 
     @R0
     D = M  // we add R0 to itself exactly R1 times, so set the data register to the value of R0
-    @R2    // add R0 to R2
-    M = M + D
+    
+    @R2
+    M = M + D  // add the value of R0 to R2
 
     @LOOP
     0; JMP
@@ -50,4 +55,3 @@ M = 0
 (END)
     @END
     0; JMP  // infinite loop
-
