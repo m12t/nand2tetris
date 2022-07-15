@@ -12,8 +12,11 @@
 // Put your code here.
 
 // program flow:
-// the program will run exactly `R1` times and
-// add R0 to itself to perform the multiplication
+// * the program will run exactly `R1` times and
+//   add R0 to itself to perform the multiplication
+// * NOTE: no optimizations are implemented here, such
+//   as checking for zeros in either operand, or looping
+//   over the smaller operand so less operations are performed, etc.
 
 // ------------ pseudocode ------------
 // loop:
