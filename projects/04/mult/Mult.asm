@@ -33,12 +33,10 @@ M = 0
 (LOOP)
     // if R1 == 0: exit
     @R1
-    D=M  // set the data register to the value of R1
+    D = M  // set the data register to the value of R1
+    M = M - 1
     @END
     D; JEQ  // by using D, if R1 == 0: exit
-
-    @R1
-    M = M - 1  // decrement the value of R1
 
     @R0
     D = M  // we add R0 to itself exactly R1 times, so set the data register to the value of R0
