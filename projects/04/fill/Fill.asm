@@ -28,9 +28,15 @@
 
 // white:
 //    set screen to all ones
+//    JMP paint(white)
 
 // black:
 //    set screen to all zeros
+//    JMP paint(black)
+
+// paint:
+//    while index < keyboard:
+//        value[index] = color
 // ------------------------------------
 
 // NOTES on HACK resigters:
@@ -42,80 +48,54 @@
 // addresses 16384 (0x4000) and 24576 (0x6000), respectively, which are the base
 // addresses of the screen and keyboard memory maps.
 
-// set the ending index
-@8192
-D = A
-@end
-M = D
 
 (LOOP)
     // reset the screen index (arr) to the beginning of the screen
-    @offset
-    M = 0
+    @SCREEN  // same as @16384 but better for readability and portability since SCREEN might not always be at 16384.
+    D = A    // set the D register to the address of SCREEN, or 16384
+    @index   // create a variable in ram called index
+    M = D    // set the value of ram[index] to D, in this case, 16384
 
     // check the key value and paint accordingly
-    @KBD
-    D = M    // set the data register to the key code
-    @PAINTBLACK
+    @KBD     // same as @24576 but better for readability and portability since keyboard might not always be at 24576.
+    D = M    // set the D register to the key code grabbed from the keyboard
+    @BLACK
     D; JEQ   // if the key code == 0, paint black
-    @PAINTWHITE
+    @WHITE
     D; JNE   // if the key code != 0, paint white
 
 
-// (BLACK)
-//     @color     // the "color" to paint
-//     M = -1  // -1 is all ones in 2's complement, so all black
-//     @PAINT
-//     0; JMP
-
-
-// (WHITE)
-//     @color
-//     M = 0
-//     @PAINT
-//     0; JMP
-
-(PAINTWHITE)
-
-    @offset
-    D = M
-    @end
-    D = D - M  // end - current_offset
-    @LOOP
-    D; JEQ
-
-    @SCREEN    // this holds the beginning screen index, 16384
-    D = A      // the D register now holds the beginning screen index
-    @offset
-    A = D + M  // set the current index to Screen + offset
-    M = 0
-
-    @offset
-    M = M + 1  // increment the offset by 1
-
-    // the screen isn't yet painted, do another iteration
-    @PAINTWHITE
+(BLACK)
+    @color     // the "color" to paint
+    M = -1     // -1 is all ones in 2's complement, so all black
+    @PAINT
     0; JMP
 
 
-(PAINTBLACK)
-
-    @offset
-    D = M
-    @end
-    D = D - M  // end - current_offset
-    @LOOP
-    D; JEQ
-
-    @SCREEN    // this holds the beginning screen index, 16384
-    D = A      // the D register now holds the beginning screen index
-    @offset
-    A = D + M  // set the current index to Screen + offset
-    M = -1
-
-    @offset
-    M = M + 1  // increment the offset by 1
-
-    // the screen isn't yet painted, do another iteration
-    @PAINTBLACK
+(WHITE)
+    @color
+    M = 0      // 0 is all zeros in 2's complement, so all white
+    @PAINT
     0; JMP
+
+
+(PAINT)
+    // the main loop to paint the screen
+    @color
+    D = M      // set the D register to the color specified earlier
+
+    @index
+    A = M      // set the D register to the color specified earlier
+    M = D      // do the actual "paint" of the value by setting RAM[index] = color
+
+    @index
+    M = M + 1  // increment the index by 1 since a value was just painted
+    D = M      // store this new index in the D register for use below
+
+    @KBD
+    D = A - D  // compare the KBD address, which is immediately following the last screen pixel, with the current index
+    @LOOP
+    D; JEQ     // if the index is at the keyboard, jump back to the main loop, else continue
+
+    @PAINT
+    0; JMP     // the screen isn't yet completely painted, do another iteration
