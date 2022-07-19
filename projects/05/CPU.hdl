@@ -77,7 +77,7 @@ CHIP CPU {
         zy=instruction[9], ny=instruction[8], f=instruction[7],
         no=instruction[6], out=outM, out=previous, zr=zr, ng=ng);
 
-    // branch determination:
+    // ------------- begin branch determination logic -------------
     Or(a=instruction[0], b=instruction[1], out=zeroOrOne);
     Not(in=zeroOrOne, out=notZeroOrOne);
     Or(a=instruction[1], b=instruction[2], out=oneOrTwo);
@@ -94,16 +94,11 @@ CHIP CPU {
     And(a=instruction[1], b=instruction[2], out=oneAndTwo);    
     
     Not(in=zr, out=notzr);  // if ALU out is zero this will be 0. else if ALU out is not zero, this outputs 1
-    Not(in=ng, out=pos);  // if ALU out is negative this will be 0. else if ALU out is pos, this outputs 1
-
-    // // 000: no jump  -- can this be deleted??? yes. just because some of these bits are high does NOT
-    // necessarily mean a jump will occur due to the condition not being met.
-    // Or(a=zeroOrOne, b=oneOrTwo, out=ooo);        // 000 -> 1
-    // Not(in=ooo, out=null);                       // 000 -> 0; if no jmp, increment the PC
+    Not(in=ng, out=pos);    // if ALU out is negative this will be 0. else if ALU out is pos, this outputs 1
 
     // 001: JGT; if (ALU out > 0) jump
     And(a=notOneOrTwo, b=instruction[0], out=ool);
-    And(a=notzr, b=pos, out=gtz);
+    And(a=notzr, b=pos, out=gtz);  // ALU out is greater than zero 
     And(a=ool, b=gtz, out=jgt);
 
     // 010: JEQ; if (ALU out == 0) jump
@@ -112,7 +107,7 @@ CHIP CPU {
 
     // 011: JGE; if (ALU out >= 0) jump
     And(a=notTwo, b=zeroAndOne, out=oll);
-    Or(a=zr, b=pos, out=gez);
+    Or(a=zr, b=pos, out=gez);      // ALU out is greater than or equal to zero 
     And(a=oll, b=gez, out=jge);
 
     // 100: JLT; if (ALU out < 0) jump
@@ -125,11 +120,11 @@ CHIP CPU {
 
     // 110: JLE; if (ALU out <= 0) jump
     And(a=oneAndTwo, b=notZero, out=llo);
-    Or(a=ng, b=zr, out=lez);
+    Or(a=ng, b=zr, out=lez);       // ALU out is less than or equal to zero 
     And(a=llo, b=lez, out=jle);
 
     // 111: JMP; unconditional jump
-    And(a=zeroAndOne, b=oneAndTwo, out=j0);
+    And(a=zeroAndOne, b=oneAndTwo, out=j4);
 
     // if any of the final jmp calculations are true, use that as the LOAD flag for the PC.
     // use the negated jump output as the increment flag.
@@ -137,12 +132,13 @@ CHIP CPU {
     Or(a=jge, b=jlt, out=j2);
     Or(a=jne, b=jle, out=j3);
 
-    Or(a=j1, b=j2, out=j4);
-    Or(a=j3, b=j0, out=j5);
+    Or(a=j1, b=j2, out=j5);
+    Or(a=j3, b=j4, out=j6);
 
-    Or(a=j4, b=j5, out=possibleJmp);  // this prevents A instructions from being misinterpreted as jumps
+    Or(a=j5, b=j6, out=possibleJmp);  // this prevents A instructions from being misinterpreted as jumps
     And(a=instruction[15], b=possibleJmp, out=jmp);
     Not(in=jmp, out=nojmp);
+    // -------------- end branch determination logic --------------
 
     // address comes from A register via `toPC`
     PC(in=toPC, load=jmp, inc=nojmp, reset=reset, out[0..14]=pc);
