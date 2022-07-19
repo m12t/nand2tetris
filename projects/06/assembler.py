@@ -4,6 +4,60 @@ A simple non-symbolic assembler for the Hack assembly language
 # import argparse to handle the .asm file
 
 
+comp = {
+    "0": "0101010",
+    "1": "0111111",
+    "-1": "0111010",
+    "D": "0001100",
+    "A": "0110000",
+    "M": "1110000",
+    "!D": "0001111",
+    "!A": "0110001",
+    "!M": "1110001",
+    "-D": "0001111",
+    "-A": "0110011",
+    "-M": "1110011",
+    "D+1": "0011111",
+    "A+1": "0110111",
+    "M+1": "1110111",
+    "D-1": "0001110",
+    "A-1": "0110010",
+    "M-1": "1110010",
+    "D+A": "0000010",
+    "D+M": "1000010",
+    "D-A": "0010011",
+    "D-M": "1010011",
+    "A-D": "0000111",
+    "M-D": "1000111",
+    "D&A": "0000000",
+    "D&M": "1000000",
+    "D|A": "0010101",
+    "D|M": "1010101",
+}
+
+dest = {
+    "": "000",
+    "M": "001",
+    "D": "010",
+    "MD": "011",
+    "A": "100",
+    "AM": "101",
+    "AD": "110",
+    "AMD": "111",
+}
+
+jump = {
+    "": "000",
+    "JGT": "001",
+    "JEQ": "010",
+    "JGE": "011",
+    "JLT": "100",
+    "JNE": "101",
+    "JLE": "110",
+    "JMP": "111",
+}
+
+
 def main():
     # if A instruction: assert instruction[15] == 0, and the rest of the value is the computed zero-padded 15 bit binary value given by @value
     # else (C instruction): instruction[15..13] = 1, then pass through a parser and extract the 3 components (dest, comp, jmp)
@@ -11,13 +65,14 @@ def main():
     # with open("add/Add.asm", "r") as f:
     #     for line in f.readlines():
     if True:
-        for line in ["@1", "@14554"]:
+        for line in ["@1", "@14554", "MD=D+1"]:
             if line[0] == '@':  # it's an A instruction
                 binary = parse_a(line)
             else:
                 binary = parse_c(line)
             out.append(binary)
     print(out)
+    # write out to a new file
 
 
 def decimal_to_binary(num: str) -> str:
@@ -46,7 +101,22 @@ def parse_a(line: str) -> str:
 
 
 def parse_c(line: str) -> str:
-    pass
+    # TODO: strip whitespace for each line independently
+    line = line.split('=')
+    d = line[0]
+    line = line[1].split(';')
+    c = line[0]
+    try:
+        j = line[1]
+    except IndexError:
+        j = ""
+
+    d = dest[d]
+    c = comp[c]
+    j = jump[j]
+
+    final = "111" + c + d + j
+    return final
 
 
 if __name__ == "__main__":
