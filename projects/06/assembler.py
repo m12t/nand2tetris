@@ -62,10 +62,13 @@ def main():
     # if A instruction: assert instruction[15] == 0, and the rest of the value is the computed zero-padded 15 bit binary value given by @value
     # else (C instruction): instruction[15..13] = 1, then pass through a parser and extract the 3 components (dest, comp, jmp)
     out = []  # empty list for storing the "binary" translation
-    # with open("add/Add.asm", "r") as f:
-    #     for line in f.readlines():
-    if True:
-        for line in ["@1", "@14554", "MD=D+1"]:
+    # if True:
+    #     for line in ["@1", "@14554", "MD=D+1;JLT"]:
+    with open("add/Add.asm", "r") as f:
+        for line in f.readlines():
+            line = clean_line(line)
+            if len(line) == 0:
+                continue
             if line[0] == '@':  # it's an A instruction
                 binary = parse_a(line)
             else:
@@ -73,6 +76,16 @@ def main():
             out.append(binary)
     print(out)
     # write out to a new file
+
+
+def clean_line(line: str) -> str:
+    try:
+        line = line.split('//')[0]  # remove trailing comments
+    except IndexError:
+        pass
+    line = line.replace(" ", "")  # strip whitespace so the lookups work
+    line = line.replace("\n", "")  # strip whitespace so the lookups work
+    return line
 
 
 def decimal_to_binary(num: str) -> str:
@@ -95,18 +108,18 @@ def decimal_to_binary(num: str) -> str:
 
 def parse_a(line: str) -> str:
     out = decimal_to_binary(line[1:])  # everything after the @ character
-    final = "0" + out  # prepend the output with a 0 which signifies this is an A instruction
-    # print(final)
-    return final
+    return "0" + out  # prepend the output with a 0 which signifies this is an A instruction
 
 
 def parse_c(line: str) -> str:
-    # TODO: strip whitespace for each line independently
+    # should this be case sensitive? use .upper()???
+    # the format for C instructions is: `dest = comp; jump` ... split the line on `=` and then `;`
     line = line.split('=')
     d = line[0]
     line = line[1].split(';')
     c = line[0]
     try:
+        # handle trailing whitespace and comments eg M=D  // foo comment bar
         j = line[1]
     except IndexError:
         j = ""
@@ -115,8 +128,7 @@ def parse_c(line: str) -> str:
     c = comp[c]
     j = jump[j]
 
-    final = "111" + c + d + j
-    return final
+    return "111" + c + d + j
 
 
 if __name__ == "__main__":
