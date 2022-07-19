@@ -100,8 +100,8 @@ CHIP CPU {
     // if any of the final jmp calculations are true, use that as the LOAD flag for the PC.
     // use the negated jump output as the increment flag.
     Or(a=jgt, b=jeq, out=j1);
-    Or(a=j1, b=jlt, out=possibleJmp);  // this prevents A instructions from being misinterpreted as jumps
-    And(a=instruction[15], b=possibleJmp, out=jmp);
+    Or(a=j1, b=jlt, out=possibleJmp);
+    And(a=instruction[15], b=possibleJmp, out=jmp);  // this prevents A instructions from being misinterpreted as jumps
     // -------------- end branch determination logic --------------
 
     // address comes from A register via `ARegOut`
