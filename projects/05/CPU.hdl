@@ -25,6 +25,30 @@
  * than to the address resulting from executing the current instruction. 
  */
 
+/* NOTES:
+recall from chapter 4, the format and encoding of an instruction:
+if opcode (address[15]) == 0, it's an A instruction
+if opcode (address[15]) == 1, it's a  C instruction
+
+C instruction:
+         |opcode|---- compare ----|- dest -|- jump -|
+binary:        1 1 1 a c1 c2 c3 c4 c5 c6 d1 d2 d3 j1 j2 j3
+
+A instruction:
+The A-instruction is used to set the A register to a 15-bit value
+         |opcode|----- value -----|
+binary:        0 vvv vvvv vvvv vvvv
+
+
+ALU output:
+if (out == 0) zr = 1, else zr = 0
+if (out < 0) ng = 1, else ng = 0
+
+J (j1, j2, j3, zr, ng) = 1 if condition is true, 0 otherwise
+
+*/
+
+
 CHIP CPU {
 
     IN  inM[16],         // M value input  (M = contents of RAM[A])
@@ -39,5 +63,87 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+    Mux16(a=instruction, b=previous, sel=instruction[15], out=mux1);   // if A instruction, route instruction, else if C instruction, route from previous
+    Not(in=instruction[15], out=AInstruction);        // since the bit signifying an A instruction is 0, flip it here so Or() can be used below
+    Or(a=AInstruction, b=instruction[5], out=loadA);  // if (it's a C instruction with inst[5] == 1) or (regular A instruction) assert ARegister load load bit
+    ARegister(in=mux1, load=loadA, out=ARegOut, out=toPC, out[0..14]=addressM);  // A register
+    
+    Mux16(a=ARegOut, b=inM, sel=instruction[12], out=mux2);
+    DRegister(in=previous, load=instruction[4], out=DRegOut);  // D register
+
+    And(a=instruction[15], b=instruction[3], out=writeM);  // if it's a C instruction and the M bit [3] is asserted, handle writeM instruction
+    
+    ALU(x=DRegOut, y=mux2, zx=instruction[11], nx=instruction[10],
+        zy=instruction[9], ny=instruction[8], f=instruction[7],
+        no=instruction[6], out=outM, out=previous, zr=zr, ng=ng);
+
+    // branch determination:
+    Or(a=instruction[0], b=instruction[1], out=zeroOrOne);
+    Not(in=zeroOrOne, out=notZeroOrOne);
+    Or(a=instruction[1], b=instruction[2], out=oneOrTwo);
+    Not(in=oneOrTwo, out=notOneOrTwo);
+    Or(a=instruction[0], b=instruction[2], out=zeroOrTwo);
+    Not(in=zeroOrTwo, out=notZeroOrTwo);
+
+    Not(in=instruction[0], out=notZero);
+    Not(in=instruction[1], out=notOne);
+    Not(in=instruction[2], out=notTwo);
+
+    And(a=instruction[0], b=instruction[1], out=zeroAndOne);
+    And(a=instruction[0], b=instruction[2], out=zeroAndTwo);
+    And(a=instruction[1], b=instruction[2], out=oneAndTwo);    
+    
+    Not(in=zr, out=notzr);  // if ALU out is zero this will be 0. else if ALU out is not zero, this outputs 1
+    Not(in=ng, out=pos);  // if ALU out is negative this will be 0. else if ALU out is pos, this outputs 1
+
+    // // 000: no jump  -- can this be deleted??? yes. just because some of these bits are high does NOT
+    // necessarily mean a jump will occur due to the condition not being met.
+    // Or(a=zeroOrOne, b=oneOrTwo, out=ooo);        // 000 -> 1
+    // Not(in=ooo, out=null);                       // 000 -> 0; if no jmp, increment the PC
+
+    // 001: JGT; if (ALU out > 0) jump
+    And(a=notOneOrTwo, b=instruction[0], out=ool);
+    And(a=notzr, b=pos, out=gtz);
+    And(a=ool, b=gtz, out=jgt);
+
+    // 010: JEQ; if (ALU out == 0) jump
+    And(a=notZeroOrTwo, b=instruction[1], out=olo);
+    And(a=zr, b=olo, out=jeq);
+
+    // 011: JGE; if (ALU out >= 0) jump
+    And(a=notTwo, b=zeroAndOne, out=oll);
+    Or(a=zr, b=pos, out=gez);
+    And(a=oll, b=gez, out=jge);
+
+    // 100: JLT; if (ALU out < 0) jump
+    And(a=instruction[2], b=notZeroOrOne, out=loo);
+    And(a=loo, b=ng, out=jlt);
+
+    // 101: JNE; if (ALU out != 0) jump
+    And(a=zeroAndTwo, b=notOne, out=lol);
+    And(a=lol, b=notzr, out=jne);
+
+    // 110: JLE; if (ALU out <= 0) jump
+    And(a=oneAndTwo, b=notZero, out=llo);
+    Or(a=ng, b=zr, out=lez);
+    And(a=llo, b=lez, out=jle);
+
+    // 111: JMP; unconditional jump
+    And(a=zeroAndOne, b=oneAndTwo, out=j0);
+
+    // if any of the final jmp calculations are true, use that as the LOAD flag for the PC.
+    // use the negated jump output as the increment flag.
+    Or(a=jgt, b=jeq, out=j1);
+    Or(a=jge, b=jlt, out=j2);
+    Or(a=jne, b=jle, out=j3);
+
+    Or(a=j1, b=j2, out=j4);
+    Or(a=j3, b=j0, out=j5);
+
+    Or(a=j4, b=j5, out=possibleJmp);  // this prevents A instructions from being misinterpreted as jumps
+    And(a=instruction[15], b=possibleJmp, out=jmp);
+    Not(in=jmp, out=nojmp);
+
+    // address comes from A register via `toPC`
+    PC(in=toPC, load=jmp, inc=nojmp, reset=reset, out[0..14]=pc);
 }
