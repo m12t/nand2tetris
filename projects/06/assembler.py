@@ -64,7 +64,7 @@ def main():
     out = []  # empty list for storing the "binary" translation
     # if True:
     #     for line in ["@1", "@14554", "MD=D+1;JLT"]:
-    with open("add/Add.asm", "r") as f:
+    with open("max/Max.asm", "r") as f:
         for line in f.readlines():
             line = clean_line(line)
             if len(line) == 0:
@@ -91,6 +91,8 @@ def clean_line(line: str) -> str:
 def decimal_to_binary(num: str) -> str:
     # generate a 15 bit binary number from a decimal
     # can this be negative...?
+    if num[0] == 'R':
+        num = num[1:]
     num = int(num)
     # print(num)
     out = ["0"] * 15
