@@ -66,10 +66,13 @@ CHIP CPU {
     Mux16(a=instruction, b=previous, sel=instruction[15], out=mux1);   // if A instruction, route instruction, else if C instruction, route from previous
     Not(in=instruction[15], out=AInstruction);        // since the bit signifying an A instruction is 0, flip it here so Or() can be used below
     Or(a=AInstruction, b=instruction[5], out=loadA);  // if (it's a C instruction with inst[5] == 1) or (regular A instruction) assert ARegister load load bit
-    ARegister(in=mux1, load=loadA, out=ARegOut, out=toPC, out[0..14]=addressM);  // A register
+    ARegister(in=mux1, load=loadA, out=ARegOut, out[0..14]=addressM);
     
-    Mux16(a=ARegOut, b=inM, sel=instruction[12], out=mux2);
-    DRegister(in=previous, load=instruction[4], out=DRegOut);  // D register
+    And(a=instruction[15], b=instruction[4], out=loadD);
+    DRegister(in=previous, load=loadD, out=DRegOut);
+
+    And(a=instruction[15], b=instruction[12], out=AorM);
+    Mux16(a=ARegOut, b=inM, sel=AorM, out=mux2);
 
     And(a=instruction[15], b=instruction[3], out=writeM);  // if it's a C instruction and the M bit [3] is asserted, handle writeM instruction
     
@@ -78,68 +81,29 @@ CHIP CPU {
         no=instruction[6], out=outM, out=previous, zr=zr, ng=ng);
 
     // ------------- begin branch determination logic -------------
-    Or(a=instruction[0], b=instruction[1], out=zeroOrOne);
-    Not(in=zeroOrOne, out=notZeroOrOne);
-    Or(a=instruction[1], b=instruction[2], out=oneOrTwo);
-    Not(in=oneOrTwo, out=notOneOrTwo);
-    Or(a=instruction[0], b=instruction[2], out=zeroOrTwo);
-    Not(in=zeroOrTwo, out=notZeroOrTwo);
-
-    Not(in=instruction[0], out=notZero);
-    Not(in=instruction[1], out=notOne);
-    Not(in=instruction[2], out=notTwo);
-
-    And(a=instruction[0], b=instruction[1], out=zeroAndOne);
-    And(a=instruction[0], b=instruction[2], out=zeroAndTwo);
-    And(a=instruction[1], b=instruction[2], out=oneAndTwo);    
-    
+    // only equals, less than, greater than are needed. Other comparisons are merely combinations of these 3 and thus are superfluous
     Not(in=zr, out=notzr);  // if ALU out is zero this will be 0. else if ALU out is not zero, this outputs 1
     Not(in=ng, out=pos);    // if ALU out is negative this will be 0. else if ALU out is pos, this outputs 1
 
     // 001: JGT; if (ALU out > 0) jump
-    And(a=notOneOrTwo, b=instruction[0], out=ool);
     And(a=notzr, b=pos, out=gtz);  // ALU out is greater than zero 
-    And(a=ool, b=gtz, out=jgt);
+    And(a=instruction[0], b=gtz, out=jgt);
 
     // 010: JEQ; if (ALU out == 0) jump
-    And(a=notZeroOrTwo, b=instruction[1], out=olo);
+    And(a=instruction[1], b=true, out=olo);
     And(a=zr, b=olo, out=jeq);
 
-    // 011: JGE; if (ALU out >= 0) jump
-    And(a=notTwo, b=zeroAndOne, out=oll);
-    Or(a=zr, b=pos, out=gez);      // ALU out is greater than or equal to zero 
-    And(a=oll, b=gez, out=jge);
-
     // 100: JLT; if (ALU out < 0) jump
-    And(a=instruction[2], b=notZeroOrOne, out=loo);
+    And(a=instruction[2], b=true, out=loo);
     And(a=loo, b=ng, out=jlt);
-
-    // 101: JNE; if (ALU out != 0) jump
-    And(a=zeroAndTwo, b=notOne, out=lol);
-    And(a=lol, b=notzr, out=jne);
-
-    // 110: JLE; if (ALU out <= 0) jump
-    And(a=oneAndTwo, b=notZero, out=llo);
-    Or(a=ng, b=zr, out=lez);       // ALU out is less than or equal to zero 
-    And(a=llo, b=lez, out=jle);
-
-    // 111: JMP; unconditional jump
-    And(a=zeroAndOne, b=oneAndTwo, out=j4);
 
     // if any of the final jmp calculations are true, use that as the LOAD flag for the PC.
     // use the negated jump output as the increment flag.
     Or(a=jgt, b=jeq, out=j1);
-    Or(a=jge, b=jlt, out=j2);
-    Or(a=jne, b=jle, out=j3);
-
-    Or(a=j1, b=j2, out=j5);
-    Or(a=j3, b=j4, out=j6);
-
-    Or(a=j5, b=j6, out=possibleJmp);  // this prevents A instructions from being misinterpreted as jumps
+    Or(a=j1, b=jlt, out=possibleJmp);  // this prevents A instructions from being misinterpreted as jumps
     And(a=instruction[15], b=possibleJmp, out=jmp);
-    Not(in=jmp, out=nojmp);
     // -------------- end branch determination logic --------------
 
-    // address comes from A register via `toPC`
-    PC(in=toPC, load=jmp, inc=nojmp, reset=reset, out[0..14]=pc);
+    // address comes from A register via `ARegOut`
+    PC(in=ARegOut, load=jmp, inc=true, reset=reset, out[0..14]=pc);
 }

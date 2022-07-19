@@ -21,4 +21,8 @@ CHIP Computer {
     PARTS:
     // Put your code here:
     // this should only take ~3 lines of HDL, granted RAM, ROM, and CPU are already implemented
+    ROM32K(address=pcAddress, out=inst);
+    CPU(inM=mem, instruction=inst, reset=reset, outM=memData, writeM=memLoad, addressM=memAddress, pc=pcAddress);
+    Memory(in=memData, load=memLoad, address=memAddress, out=mem);
+
 }
