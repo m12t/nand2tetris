@@ -88,14 +88,19 @@ ram_index = 16  # new variables start at index 16
 
 
 def main():
-    with open("add/Add.asm", "r") as f:
+    with open("pong/Pong.asm", "r") as f:
         stripped_assembly = first_pass(f)
         # print(stripped_assembly)
         machine_code = second_pass(stripped_assembly)
-    # write out to a new file `argparse_name.hack`
-    print("---")
-    print(machine_code)
+    write_output(machine_code)
 
+
+def write_output(machine_code):
+    print(machine_code)
+    with open("./pong.hack", 'w') as f:
+        f.truncate(0)  # clear the file
+        f.write(machine_code)
+    
 
 def first_pass(f):
     # first pass will:
@@ -116,7 +121,7 @@ def first_pass(f):
             while line[i] != ')':
                 name += line[i]
                 i += 1
-            symbol_table[name] = line_count + 1
+            symbol_table[name] = line_count
             # print('-=>', symbol_table[name])
         else:
             line_count += 1
@@ -150,12 +155,9 @@ def clean_line(line: str) -> str:
     return line
 
 
-
 def decimal_to_binary(num: str) -> str:
     # generate a 15 bit binary number from a decimal
     # can this be negative...?
-    if num == "":
-        return "000000000000000"
     num = int(num)
     # print(num)
     out = ["0"] * 15
@@ -167,18 +169,21 @@ def decimal_to_binary(num: str) -> str:
             num -= 2**place
         place -= 1
     out = "".join(out)
-    print(out)
+    # print(out)
     return out
 
 
 def parse_a(line: str) -> str:
     global ram_index  # pull the ram_index into scope
     address = line[1:]
-    if re.search('[A-Z]', address):
+    if re.search('[A-Z.0-9]', address):
         if address in symbol_table:
+            # print('addy', address)
             address = symbol_table[address]
+            # print('letters found', address)
         else:
             symbol_table[address] = ram_index
+            address = ram_index
             ram_index += 1
     out = decimal_to_binary(address)  # everything after the @ character
     return "0" + out  # prepend the output with a 0 which signifies this is an A instruction
