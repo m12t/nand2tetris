@@ -3,6 +3,7 @@ A simple non-symbolic assembler for the Hack assembly language
 """
 # import argparse to handle the .asm file
 import re
+import argparse
 
 
 comp = {
@@ -87,17 +88,19 @@ symbol_table = {
 ram_index = 16  # new variables start at index 16
 
 
-def main():
-    with open("pong/Pong.asm", "r") as f:
+def main(file: str):
+    extensionless_name = file.split(".asm")[0]
+    with open(file, "r") as f:
         stripped_assembly = first_pass(f)
         # print(stripped_assembly)
         machine_code = second_pass(stripped_assembly)
-    write_output(machine_code)
+    write_output(machine_code, extensionless_name)
 
 
-def write_output(machine_code):
+def write_output(machine_code, extensionless_name):
+    path = extensionless_name + ".hack"
     print(machine_code)
-    with open("./pong.hack", 'w') as f:
+    with open(path, 'w') as f:
         f.truncate(0)  # clear the file
         f.write(machine_code)
     
@@ -218,5 +221,10 @@ def parse_c(line: str) -> str:
 
 
 if __name__ == "__main__":
-    # load the file
-    main()
+    parser = argparse.ArgumentParser()
+    # required args:
+    parser.add_argument('--file', type=str, required=True,
+                        help='the path to the file you wish to assemble')
+    args = parser.parse_args()
+    file = args.file
+    main(file)
