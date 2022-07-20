@@ -2,6 +2,7 @@
 A simple non-symbolic assembler for the Hack assembly language
 """
 # import argparse to handle the .asm file
+import re
 
 
 comp = {
@@ -57,25 +58,86 @@ jump = {
     "JMP": "111",
 }
 
+symbol_table = {
+    "R0": "0",
+    "R1": "1",
+    "R2": "2",
+    "R3": "3",
+    "R4": "4",
+    "R5": "5",
+    "R6": "6",
+    "R7": "7",
+    "R8": "8",
+    "R9": "9",
+    "R10": "10",
+    "R11": "11",
+    "R12": "12",
+    "R13": "13",
+    "R14": "14",
+    "R15": "15",
+    "SCREEN": "16348",
+    "KEYBOARD": "24576",
+    "SP": "0",
+    "LCL": "1",
+    "ARG": "2",
+    "THIS": "3",
+    "THAT": "4",
+}
+
+ram_index = 16  # new variables start at index 16
+
 
 def main():
-    # if A instruction: assert instruction[15] == 0, and the rest of the value is the computed zero-padded 15 bit binary value given by @value
-    # else (C instruction): instruction[15..13] = 1, then pass through a parser and extract the 3 components (dest, comp, jmp)
-    out = []  # empty list for storing the "binary" translation
-    # if True:
-    #     for line in ["@1", "@14554", "MD=D+1;JLT"]:
-    with open("max/Max.asm", "r") as f:
-        for line in f.readlines():
-            line = clean_line(line)
-            if len(line) == 0:
-                continue
-            if line[0] == '@':  # it's an A instruction
-                binary = parse_a(line)
-            else:
-                binary = parse_c(line)
-            out.append(binary)
-    print(out)
-    # write out to a new file
+    with open("add/Add.asm", "r") as f:
+        stripped_assembly = first_pass(f)
+        # print(stripped_assembly)
+        machine_code = second_pass(stripped_assembly)
+    # write out to a new file `argparse_name.hack`
+    print("---")
+    print(machine_code)
+
+
+def first_pass(f):
+    # first pass will:
+    # 1. remove all whitespace so that row addresses can be handled
+    # 2. look for symbol definitions (left parentheses) and append
+    #    the addresses to the symbol table
+    # symbol_table[xxx] = address following the format: (xxx)
+    assembly = []
+    line_count = 0
+    for line in f.readlines():
+        line = clean_line(line)
+        # print('line', line)
+        if line == "" or line == '\n' or line == '\t':
+            continue
+        if line[0] == '(':
+            i = 1
+            name = ""
+            while line[i] != ')':
+                name += line[i]
+                i += 1
+            symbol_table[name] = line_count + 1
+            # print('-=>', symbol_table[name])
+        else:
+            line_count += 1
+            assembly.append(line + '\n')
+    return "".join(assembly)
+
+
+def second_pass(program):
+    out = []
+    for line in program.split('\n'):
+        if line == "":
+            continue
+        # print('whole line',line)
+        # line = clean_line(line)  # shouldn't be needed at this stage
+        # print('line[0]', line[0])
+        if line[0] == '@':  # it's an A instruction
+            binary = parse_a(line)
+        else:
+            binary = parse_c(line)
+        out.append(binary+'\n')
+    return "".join(out)
 
 
 def clean_line(line: str) -> str:
@@ -83,16 +145,17 @@ def clean_line(line: str) -> str:
         line = line.split('//')[0]  # remove trailing comments
     except IndexError:
         pass
-    line = line.replace(" ", "")  # strip whitespace so the lookups work
-    line = line.replace("\n", "")  # strip whitespace so the lookups work
+    line = line.replace(' ', "")  # strip whitespace so the lookups work
+    line = line.replace('\n', "")  # strip whitespace so the lookups work
     return line
+
 
 
 def decimal_to_binary(num: str) -> str:
     # generate a 15 bit binary number from a decimal
     # can this be negative...?
-    if num[0] == 'R':
-        num = num[1:]
+    if num == "":
+        return "000000000000000"
     num = int(num)
     # print(num)
     out = ["0"] * 15
@@ -109,27 +172,43 @@ def decimal_to_binary(num: str) -> str:
 
 
 def parse_a(line: str) -> str:
-    out = decimal_to_binary(line[1:])  # everything after the @ character
+    global ram_index  # pull the ram_index into scope
+    address = line[1:]
+    if re.search('[A-Z]', address):
+        if address in symbol_table:
+            address = symbol_table[address]
+        else:
+            symbol_table[address] = ram_index
+            ram_index += 1
+    out = decimal_to_binary(address)  # everything after the @ character
     return "0" + out  # prepend the output with a 0 which signifies this is an A instruction
 
 
 def parse_c(line: str) -> str:
-    # should this be case sensitive? use .upper()???
     # the format for C instructions is: `dest = comp; jump` ... split the line on `=` and then `;`
-    line = line.split('=')
-    d = line[0]
-    line = line[1].split(';')
-    c = line[0]
-    try:
-        # handle trailing whitespace and comments eg M=D  // foo comment bar
+    # however, D;JGT is valid, and no equals is present
+    # dest can be null ("") and jump can be null ("")
+    # print('parse_c', line)
+    d, c, j = "", "", ""
+    if re.search("=", line):
+        line = line.split('=')
+        # print('equals found line', line)
+        d = line[0]
+        line = line[1]
+    if re.search(";", line):
+        # print('semi found')
+        line = line.split(';')
+        c = line[0]
         j = line[1]
-    except IndexError:
-        j = ""
-
+    else:
+        c = line
+    # print('d', d)
+    # print('c', c)
+    # print('j', j)
     d = dest[d]
     c = comp[c]
     j = jump[j]
-
+    # print('... bin:', "111" + c + d + j)
     return "111" + c + d + j
 
 
