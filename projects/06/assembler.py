@@ -179,7 +179,7 @@ def decimal_to_binary(num: str) -> str:
 def parse_a(line: str) -> str:
     global ram_index  # pull the ram_index into scope
     address = line[1:]
-    if re.search('[A-Z.0-9]', address):
+    if re.search('[A-Z.]', address):
         if address in symbol_table:
             # print('addy', address)
             address = symbol_table[address]
