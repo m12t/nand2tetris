@@ -222,7 +222,6 @@ def parse_c(line: str) -> str:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    # required args:
     parser.add_argument('--file', type=str, required=True,
                         help='the path to the file you wish to assemble')
     args = parser.parse_args()
