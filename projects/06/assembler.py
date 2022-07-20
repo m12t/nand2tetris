@@ -76,7 +76,7 @@ symbol_table = {
     "R13": "13",
     "R14": "14",
     "R15": "15",
-    "SCREEN": "16348",
+    "SCREEN": "16384",
     "KEYBOARD": "24576",
     "SP": "0",
     "LCL": "1",
@@ -92,17 +92,16 @@ def main(file: str):
     extensionless_name = file.split(".asm")[0]
     with open(file, "r") as f:
         stripped_assembly = first_pass(f)
-        # print(stripped_assembly)
         machine_code = second_pass(stripped_assembly)
     write_output(machine_code, extensionless_name)
 
 
 def write_output(machine_code, extensionless_name):
     path = extensionless_name + ".hack"
-    print(machine_code)
     with open(path, 'w') as f:
         f.truncate(0)  # clear the file
         f.write(machine_code)
+    print(f"program successfully assembled to: {path}")
     
 
 def first_pass(f):
@@ -115,7 +114,6 @@ def first_pass(f):
     line_count = 0
     for line in f.readlines():
         line = clean_line(line)
-        # print('line', line)
         if line == "" or line == '\n' or line == '\t':
             continue
         if line[0] == '(':
@@ -125,7 +123,6 @@ def first_pass(f):
                 name += line[i]
                 i += 1
             symbol_table[name] = line_count
-            # print('-=>', symbol_table[name])
         else:
             line_count += 1
             assembly.append(line + '\n')
@@ -137,9 +134,6 @@ def second_pass(program):
     for line in program.split('\n'):
         if line == "":
             continue
-        # print('whole line',line)
-        # line = clean_line(line)  # shouldn't be needed at this stage
-        # print('line[0]', line[0])
         if line[0] == '@':  # it's an A instruction
             binary = parse_a(line)
         else:
@@ -162,7 +156,6 @@ def decimal_to_binary(num: str) -> str:
     # generate a 15 bit binary number from a decimal
     # can this be negative...?
     num = int(num)
-    # print(num)
     out = ["0"] * 15
     place = 14
 
@@ -172,18 +165,15 @@ def decimal_to_binary(num: str) -> str:
             num -= 2**place
         place -= 1
     out = "".join(out)
-    # print(out)
     return out
 
 
 def parse_a(line: str) -> str:
     global ram_index  # pull the ram_index into scope
     address = line[1:]
-    if re.search('[A-Z.]', address):
+    if re.search('[a-zA-Z.]', address):
         if address in symbol_table:
-            # print('addy', address)
             address = symbol_table[address]
-            # print('letters found', address)
         else:
             symbol_table[address] = ram_index
             address = ram_index
@@ -196,27 +186,20 @@ def parse_c(line: str) -> str:
     # the format for C instructions is: `dest = comp; jump` ... split the line on `=` and then `;`
     # however, D;JGT is valid, and no equals is present
     # dest can be null ("") and jump can be null ("")
-    # print('parse_c', line)
     d, c, j = "", "", ""
     if re.search("=", line):
         line = line.split('=')
-        # print('equals found line', line)
         d = line[0]
         line = line[1]
     if re.search(";", line):
-        # print('semi found')
         line = line.split(';')
         c = line[0]
         j = line[1]
     else:
         c = line
-    # print('d', d)
-    # print('c', c)
-    # print('j', j)
     d = dest[d]
     c = comp[c]
     j = jump[j]
-    # print('... bin:', "111" + c + d + j)
     return "111" + c + d + j
 
 
