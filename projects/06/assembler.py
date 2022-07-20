@@ -102,7 +102,7 @@ def write_output(machine_code, extensionless_name):
         f.truncate(0)  # clear the file
         f.write(machine_code)
     print(f"program successfully assembled to: {path}")
-    
+
 
 def first_pass(f):
     # first pass will:
@@ -179,11 +179,12 @@ def parse_a(line: str) -> str:
             address = ram_index
             ram_index += 1
     out = decimal_to_binary(address)  # everything after the @ character
-    return "0" + out  # prepend the output with a 0 which signifies this is an A instruction
+    return "0" + out  # prepend the output with a 0 for A instruction
 
 
 def parse_c(line: str) -> str:
-    # the format for C instructions is: `dest = comp; jump` ... split the line on `=` and then `;`
+    # the format for C instructions is: `dest = comp; jump`
+    # ... split the line on `=` and then `;` after checking they are present
     # however, D;JGT is valid, and no equals is present
     # dest can be null ("") and jump can be null ("")
     d, c, j = "", "", ""
