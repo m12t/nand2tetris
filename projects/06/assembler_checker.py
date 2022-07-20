@@ -41,12 +41,9 @@ def main(args: dict):
             print("program1 output:", program1[i])
             print("program2 output:", program2[i])
     print("------------------------------------")
-    
+
     longest = max(program1_len, program2_len)
     print(f"the files were a {100*(1-(differences/longest)):.2f}% match")
-    
-
-
 
 
 if __name__ == "__main__":
